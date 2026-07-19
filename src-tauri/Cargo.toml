@@ -1,0 +1,47 @@
+[package]
+name = "meshos"
+version = "0.1.0"
+description = "MeshOS — decentralized LAN explorer with on-device AI anomaly detection"
+authors = ["MeshOS"]
+edition = "2021"
+rust-version = "1.77"
+
+# The application logic lives in a library so it can be reused by the desktop
+# binary and by mobile entry points.
+[lib]
+name = "meshos_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = [
+    "rt-multi-thread",
+    "macros",
+    "net",
+    "time",
+    "sync",
+] }
+# Cross-platform interface / gateway / MAC enumeration.
+netdev = "0.31"
+# Reverse DNS (blocking; used via spawn_blocking).
+dns-lookup = "2"
+
+[features]
+# Optional active ARP via libpnet for direct MAC discovery on the local
+# segment. Requires elevated privileges (CAP_NET_RAW on Linux, admin on
+# Windows). Left off by default — the unprivileged ARP-cache path is used
+# instead. Wire libpnet into `net::arp` when enabling this.
+raw-arp = []
+
+# Release profile tuned for a small, tray-friendly binary.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
