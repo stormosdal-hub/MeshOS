@@ -1,6 +1,9 @@
 pub mod arp;
 pub mod discover;
+pub mod fingerprint;
 pub mod interface;
 pub mod local;
+pub mod mdns;
 pub mod oui;
 pub mod ports;
+pub mod ssdp;

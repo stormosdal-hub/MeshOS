@@ -8,6 +8,7 @@ import type {
   NetInterface,
   ScanProgress,
   ScanStateEvent,
+  ServiceBanner,
   Severity,
 } from "../types";
 import type { MeshBackend, UnlistenFn } from "./index";
@@ -34,25 +35,28 @@ interface Seed {
   isLocal?: boolean;
   labels: string[];
   baseThreat?: number;
+  model?: string | null;
+  services?: string[];
+  banners?: ServiceBanner[];
 }
 
 const SUBNET = "192.168.1";
 
 const SEEDS: Seed[] = [
-  { ip: 1, mac: "44:38:39:ff:aa:01", hostname: "gateway.local", vendor: "Ubiquiti Networks", kind: "router", openPorts: [53, 80, 443], isGateway: true, labels: ["DNS", "HTTP", "Gateway"] },
-  { ip: 12, mac: "a4:83:e7:1c:9d:44", hostname: "storm-macbook", vendor: "Apple, Inc.", kind: "computer", openPorts: [22, 5000, 7000], isLocal: true, labels: ["SSH", "mDNS"] },
-  { ip: 18, mac: "f0:18:98:23:71:e0", hostname: "iphone-storm", vendor: "Apple, Inc.", kind: "mobile", openPorts: [], labels: ["mDNS"] },
-  { ip: 22, mac: "b8:27:eb:44:12:07", hostname: "raspberrypi", vendor: "Raspberry Pi Foundation", kind: "computer", openPorts: [22, 80, 1883], labels: ["SSH", "MQTT"] },
-  { ip: 31, mac: "24:6f:28:9a:bb:10", hostname: "esp32-sensor-01", vendor: "Espressif Inc.", kind: "microcontroller", openPorts: [80], labels: ["HTTP", "IoT"] },
-  { ip: 32, mac: "24:6f:28:9a:bb:44", hostname: "esp32-relay-02", vendor: "Espressif Inc.", kind: "microcontroller", openPorts: [80, 1883], labels: ["MQTT", "IoT"] },
-  { ip: 45, mac: "d8:3a:dd:6b:20:9c", hostname: "ps5-livingroom", vendor: "Sony Interactive", kind: "gamingRig", openPorts: [], labels: ["Gaming"] },
+  { ip: 1, mac: "44:38:39:ff:aa:01", hostname: "gateway.local", vendor: "Ubiquiti Networks", kind: "router", openPorts: [53, 80, 443], isGateway: true, labels: ["DNS", "HTTP", "Gateway"], model: "UniFi Dream Machine", services: ["UPnP", "Gateway"], banners: [{ port: 80, product: "nginx" }] },
+  { ip: 12, mac: "a4:83:e7:1c:9d:44", hostname: "storm-macbook", vendor: "Apple, Inc.", kind: "computer", openPorts: [22, 445, 5000], isLocal: true, labels: ["SSH", "mDNS"], services: ["SSH", "Workstation"], banners: [{ port: 22, product: "SSH-2.0-OpenSSH_9.6" }] },
+  { ip: 18, mac: "f0:18:98:23:71:e0", hostname: "iphone-storm", vendor: "Apple, Inc.", kind: "mobile", openPorts: [], labels: ["mDNS"], model: "iPhone 15 Pro", services: ["AirPlay", "HomeKit"] },
+  { ip: 22, mac: "b8:27:eb:44:12:07", hostname: "raspberrypi", vendor: "Raspberry Pi Foundation", kind: "computer", openPorts: [22, 80, 1883], labels: ["SSH", "MQTT"], services: ["SSH"], banners: [{ port: 22, product: "SSH-2.0-OpenSSH_9.2p1 Debian" }, { port: 80, product: "nginx/1.22.1" }] },
+  { ip: 31, mac: "24:6f:28:9a:bb:10", hostname: "esp32-sensor-01", vendor: "Espressif Inc.", kind: "microcontroller", openPorts: [80], labels: ["HTTP", "IoT"], banners: [{ port: 80, product: "ESP-IDF/1.0" }] },
+  { ip: 32, mac: "24:6f:28:9a:bb:44", hostname: "esp32-relay-02", vendor: "Espressif Inc.", kind: "microcontroller", openPorts: [80, 1883], labels: ["MQTT", "IoT"], banners: [{ port: 80, product: "ESP-IDF/1.0" }] },
+  { ip: 45, mac: "d8:3a:dd:6b:20:9c", hostname: "ps5-livingroom", vendor: "Sony Interactive", kind: "gamingRig", openPorts: [], labels: ["Gaming"], model: "PlayStation 5", services: ["UPnP", "Media Renderer"] },
   { ip: 46, mac: "1c:83:41:22:0f:aa", hostname: "battlestation", vendor: "ASUSTek Computer", kind: "gamingRig", openPorts: [3389, 27015], labels: ["RDP", "Gaming"] },
-  { ip: 50, mac: "00:11:32:aa:bc:31", hostname: "synology-nas", vendor: "Synology Inc.", kind: "nas", openPorts: [139, 445, 5001], labels: ["SMB", "Storage"] },
-  { ip: 60, mac: "30:05:5c:9d:11:02", hostname: "office-printer", vendor: "Hewlett Packard", kind: "printer", openPorts: [631, 9100], labels: ["IPP", "Print"] },
-  { ip: 70, mac: "ac:cc:8e:55:2a:9f", hostname: "front-door-cam", vendor: "Axis Communications", kind: "camera", openPorts: [80, 554], labels: ["RTSP", "Camera"] },
-  { ip: 80, mac: "50:32:37:aa:11:be", hostname: "living-room-tv", vendor: "Samsung Electronics", kind: "tv", openPorts: [8001, 8080], labels: ["DIAL", "Media"] },
-  { ip: 84, mac: "b4:e6:2d:00:71:c3", hostname: null, vendor: "Espressif Inc.", kind: "smartHome", openPorts: [80], labels: ["IoT"] },
-  { ip: 92, mac: "68:c6:3a:ee:41:70", hostname: "thermostat", vendor: "Google Nest", kind: "smartHome", openPorts: [443], labels: ["IoT", "Cloud"] },
+  { ip: 50, mac: "00:11:32:aa:bc:31", hostname: "synology-nas", vendor: "Synology Inc.", kind: "nas", openPorts: [139, 445, 5001], labels: ["SMB", "Storage"], model: "DiskStation DS220+", services: ["SMB"], banners: [{ port: 5001, product: "nginx" }] },
+  { ip: 60, mac: "30:05:5c:9d:11:02", hostname: "office-printer", vendor: "Hewlett Packard", kind: "printer", openPorts: [631, 9100], labels: ["IPP", "Print"], model: "HP LaserJet Pro M404", services: ["Printer"] },
+  { ip: 70, mac: "ac:cc:8e:55:2a:9f", hostname: "front-door-cam", vendor: "Axis Communications", kind: "camera", openPorts: [80, 554], labels: ["RTSP", "Camera"], model: "AXIS M1065-L", services: ["RTSP"] },
+  { ip: 80, mac: "50:32:37:aa:11:be", hostname: "living-room-tv", vendor: "Samsung Electronics", kind: "tv", openPorts: [8009, 8080], labels: ["DIAL", "Media"], model: "Samsung QN65 Series", services: ["Chromecast", "DIAL", "UPnP"] },
+  { ip: 84, mac: "b4:e6:2d:00:71:c3", hostname: null, vendor: "Espressif Inc.", kind: "smartHome", openPorts: [80], labels: ["IoT"], services: ["HomeKit"] },
+  { ip: 92, mac: "68:c6:3a:ee:41:70", hostname: "thermostat", vendor: "Google Nest", kind: "smartHome", openPorts: [443], labels: ["IoT", "Cloud"], model: "Nest Learning Thermostat", services: ["HomeKit"] },
 ];
 
 function now(): number {
@@ -78,6 +82,9 @@ function makeDevice(seed: Seed): Device {
     rttMs: seed.isLocal ? 0 : Math.round(2 + Math.random() * 40),
     threatScore: seed.baseThreat ?? 0,
     labels: seed.labels,
+    model: seed.model ?? null,
+    services: seed.services ?? [],
+    banners: seed.banners ?? [],
   };
 }
 
@@ -178,6 +185,9 @@ export function createMockBackend(): MeshBackend {
         rttMs: 8,
         threatScore: 30,
         labels: ["Unrecognized"],
+        model: null,
+        services: [],
+        banners: [{ port: 4444, product: "unknown" }],
       };
       upsert(rogue);
       pushAnomaly(

@@ -5,8 +5,9 @@
 use crate::ai::classify;
 use crate::model::{
     events, now_ms, Device, DeviceKind, DeviceOfflineEvent, ScanProgress, ScanStateEvent,
+    ServiceBanner,
 };
-use crate::net::{arp, interface, oui, ports};
+use crate::net::{arp, fingerprint, interface, mdns, oui, ports, ssdp};
 use crate::state::AppState;
 use std::collections::{HashMap, HashSet};
 use std::io::ErrorKind;
@@ -22,6 +23,8 @@ const CONNECT_TIMEOUT: Duration = Duration::from_millis(300);
 const MAX_INFLIGHT: usize = 400;
 const HOSTNAME_CONCURRENCY: usize = 64;
 const RESCAN_INTERVAL: Duration = Duration::from_secs(10);
+/// How long mDNS and SSDP listen for announcements each sweep.
+const DISCOVERY_WINDOW: Duration = Duration::from_secs(3);
 
 struct HostProbe {
     ip: Ipv4Addr,
@@ -164,6 +167,34 @@ async fn resolve_hostnames(ips: &[Ipv4Addr]) -> HashMap<Ipv4Addr, String> {
     map
 }
 
+/// Fingerprint each live host's open ports concurrently, returning banners.
+async fn fingerprint_hosts(
+    probes: &HashMap<Ipv4Addr, HostProbe>,
+    live: &[Ipv4Addr],
+) -> HashMap<Ipv4Addr, Vec<ServiceBanner>> {
+    let mut set: JoinSet<(Ipv4Addr, Vec<ServiceBanner>)> = JoinSet::new();
+    for &ip in live {
+        let ports: Vec<u16> = probes
+            .get(&ip)
+            .map(|p| p.open_ports.clone())
+            .unwrap_or_default();
+        if ports.is_empty() {
+            continue;
+        }
+        set.spawn(async move { (ip, fingerprint::fingerprint(ip, &ports).await) });
+    }
+
+    let mut out = HashMap::new();
+    while let Some(joined) = set.join_next().await {
+        if let Ok((ip, banners)) = joined {
+            if !banners.is_empty() {
+                out.insert(ip, banners);
+            }
+        }
+    }
+    out
+}
+
 /// Perform one full discovery pass and emit results.
 pub async fn scan_once(
     app: &AppHandle,
@@ -188,9 +219,13 @@ pub async fn scan_once(
         "sweep",
         0,
         total,
-        format!("ARP + connect sweep of {cidr} — {total} hosts"),
+        format!("Scanning {cidr} — {total} hosts (ports, mDNS, SSDP)"),
     );
-    let probes = sweep(&hosts).await;
+    // Run the port sweep, SSDP, and mDNS concurrently, so the total time is
+    // about the slowest of the three rather than their sum.
+    let mdns_handle = tokio::task::spawn_blocking(|| mdns::discover(DISCOVERY_WINDOW));
+    let (probes, ssdp_map) = tokio::join!(sweep(&hosts), ssdp::discover(DISCOVERY_WINDOW));
+    let mdns_map = mdns_handle.await.unwrap_or_default();
 
     emit_progress(
         app,
@@ -218,8 +253,15 @@ pub async fn scan_once(
     let live_vec: Vec<Ipv4Addr> = live.into_iter().collect();
 
     let names = resolve_hostnames(&live_vec).await;
+    let banners = fingerprint_hosts(&probes, &live_vec).await;
 
-    emit_progress(app, "classify", total, total, "Classifying devices…".into());
+    emit_progress(
+        app,
+        "classify",
+        total,
+        total,
+        "Fingerprinting services & classifying…".into(),
+    );
     let now = now_ms();
     let mut snapshot: HashMap<String, Device> = HashMap::new();
     {
@@ -238,7 +280,29 @@ pub async fn scan_once(
             });
             let id = mac.clone().unwrap_or_else(|| ip.to_string());
             let vendor = mac.as_deref().and_then(oui::lookup_vendor);
-            let hostname = names.get(&ip).cloned();
+
+            let mdns_info = mdns_map.get(&ip);
+            let ssdp_info = ssdp_map.get(&ip);
+            let hostname = names
+                .get(&ip)
+                .cloned()
+                .or_else(|| mdns_info.and_then(|m| m.hostname.clone()));
+            let model = mdns_info
+                .and_then(|m| m.model.clone())
+                .or_else(|| ssdp_info.and_then(|s| s.model.clone()));
+            let mut services: Vec<String> = Vec::new();
+            for svc in mdns_info
+                .map(|m| m.services.as_slice())
+                .unwrap_or(&[])
+                .iter()
+                .chain(ssdp_info.map(|s| s.services.as_slice()).unwrap_or(&[]))
+            {
+                if !services.contains(svc) {
+                    services.push(svc.clone());
+                }
+            }
+            let device_banners = banners.get(&ip).cloned().unwrap_or_default();
+
             let probe = probes.get(&ip);
             let open_ports = probe.map(|p| p.open_ports.clone()).unwrap_or_default();
             let rtt_ms = if is_local { Some(0) } else { probe.and_then(|p| p.rtt_ms) };
@@ -264,6 +328,9 @@ pub async fn scan_once(
                 rtt_ms,
                 threat_score: prior_threat,
                 labels: Vec::new(),
+                model,
+                services,
+                banners: device_banners,
             };
             classify::classify(&mut device);
             snapshot.insert(id, device);

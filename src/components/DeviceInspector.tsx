@@ -48,6 +48,7 @@ export function DeviceInspector({ controller }: { controller: Controller }) {
         <Row k="IP" v={d.ip} />
         <Row k="MAC" v={d.mac ?? "unknown"} />
         <Row k="Vendor" v={d.vendor ?? "unknown"} />
+        {d.model && <Row k="Model" v={d.model} />}
         <Row k="RTT" v={d.rttMs != null ? `${d.rttMs} ms` : "—"} />
         <Row k="Status" v={d.online ? "online" : "offline"} />
       </dl>
@@ -75,6 +76,33 @@ export function DeviceInspector({ controller }: { controller: Controller }) {
           <div className="ports-none">none observed</div>
         )}
       </div>
+
+      {d.banners.length > 0 && (
+        <div className="ports-block">
+          <div className="ports-title">Service fingerprints</div>
+          <div className="fingerprints">
+            {d.banners.map((b) => (
+              <div key={b.port} className="fingerprint">
+                <span className="fp-port">{b.port}</span>
+                <span className="fp-product">{b.product}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {d.services.length > 0 && (
+        <div className="svc-block">
+          <div className="ports-title">Announced services (mDNS / SSDP)</div>
+          <div className="tags">
+            {d.services.map((s) => (
+              <span key={s} className="tag svc-tag">
+                {s}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="threat-meter">
         <div className="threat-meter-label">

@@ -726,6 +726,39 @@ body,
   font-family: var(--mono);
 }
 
+/* ---- Service fingerprints + announced services --------------------------- */
+.fingerprints {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fingerprint {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.fp-port {
+  color: var(--accent-2);
+  min-width: 40px;
+  font-weight: 600;
+}
+.fp-product {
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.svc-block {
+  margin-bottom: 12px;
+}
+.svc-tag {
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.3);
+  color: #6ee7b7;
+}
+
 /* ---- "Servers on this device" modal -------------------------------------- */
 .modal-overlay {
   position: absolute;

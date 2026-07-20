@@ -32,6 +32,8 @@ netdev = "0.31"
 dns-lookup = "2"
 # Enumerate the local machine's listening sockets + owning process.
 listeners = "0.2"
+# mDNS / DNS-SD (Bonjour) service discovery.
+mdns-sd = "0.11"
 
 [features]
 # Optional active ARP via libpnet for direct MAC discovery on the local

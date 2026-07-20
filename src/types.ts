@@ -50,6 +50,17 @@ export interface Device {
   threatScore: number;
   /** Human-readable classifier tags, e.g. "mDNS", "HTTP", "IoT". */
   labels: string[];
+  /** Device model / friendly name from mDNS or SSDP, when advertised. */
+  model: string | null;
+  /** Services announced via mDNS/Bonjour or SSDP (e.g. "AirPlay"). */
+  services: string[];
+  /** Plaintext banners grabbed from open ports (e.g. `nginx/1.24`). */
+  banners: ServiceBanner[];
+}
+
+export interface ServiceBanner {
+  port: number;
+  product: string;
 }
 
 export type AnomalyKind =

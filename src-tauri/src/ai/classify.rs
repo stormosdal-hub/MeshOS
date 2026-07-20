@@ -24,6 +24,8 @@ pub fn classify(d: &mut Device) {
     let host = d.hostname.as_deref().unwrap_or("").to_lowercase();
     let ports = d.open_ports.clone();
     let has = |p: u16| ports.contains(&p);
+    let services = d.services.clone();
+    let svc = |name: &str| services.iter().any(|s| s == name);
 
     // Service labels from open ports.
     let mut labels: Vec<String> = Vec::new();
@@ -35,6 +37,12 @@ pub fn classify(d: &mut Device) {
 
     let kind = if d.is_gateway {
         DeviceKind::Router
+    } else if svc("Chromecast") || svc("Media Renderer") || svc("AirPlay") {
+        DeviceKind::Tv
+    } else if svc("HomeKit") {
+        DeviceKind::SmartHome
+    } else if svc("Printer") {
+        DeviceKind::Printer
     } else if host.contains("esp32") || host.contains("esp8266") || host.contains("esp-") {
         DeviceKind::Microcontroller
     } else if vendor.contains("espressif") {

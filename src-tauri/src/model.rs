@@ -61,6 +61,20 @@ pub struct Device {
     pub rtt_ms: Option<u32>,
     pub threat_score: f32,
     pub labels: Vec<String>,
+    /// Device model / friendly name from mDNS or SSDP/UPnP, when advertised.
+    pub model: Option<String>,
+    /// Services the device announces via mDNS/Bonjour or SSDP (e.g. AirPlay).
+    pub services: Vec<String>,
+    /// Plaintext service banners grabbed from open ports (e.g. `nginx/1.24`).
+    pub banners: Vec<ServiceBanner>,
+}
+
+/// A fingerprint grabbed from an open port during service detection.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ServiceBanner {
+    pub port: u16,
+    pub product: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
