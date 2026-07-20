@@ -4,6 +4,7 @@ import type {
   Anomaly,
   Device,
   DeviceOfflineEvent,
+  LocalService,
   NetInterface,
   ScanProgress,
   ScanStateEvent,
@@ -29,6 +30,7 @@ export function createTauriBackend(): MeshBackend {
 
     listInterfaces: () => invoke<NetInterface[]>("list_interfaces"),
     getDevices: () => invoke<Device[]>("get_devices"),
+    listLocalServices: () => invoke<LocalService[]>("list_local_services"),
     startScan: (interfaceName?: string) =>
       invoke("start_lan_scan", { interfaceName: interfaceName ?? null }),
     stopScan: () => invoke("stop_lan_scan"),

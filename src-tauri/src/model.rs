@@ -110,6 +110,18 @@ pub struct DeviceOfflineEvent {
     pub id: String,
 }
 
+/// A listening server on the local machine (see `net::local`).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalService {
+    pub address: String,
+    pub port: u16,
+    pub protocol: String,
+    pub pid: Option<u32>,
+    pub process: Option<String>,
+    pub service: Option<String>,
+}
+
 // ---- Event channel names (must match `EVENTS` in src/types.ts) -------------
 pub mod events {
     pub const PROGRESS: &str = "scan://progress";

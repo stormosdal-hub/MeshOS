@@ -1,5 +1,6 @@
 import type { Controller } from "../App";
 import { KIND_ICONS, KIND_LABELS, kindColor } from "../scene/deviceVisuals";
+import { SUSPICIOUS_PORTS, serviceName } from "../services";
 import { useMesh } from "../store";
 
 function Row({ k, v }: { k: string; v: string }) {
@@ -48,12 +49,32 @@ export function DeviceInspector({ controller }: { controller: Controller }) {
         <Row k="MAC" v={d.mac ?? "unknown"} />
         <Row k="Vendor" v={d.vendor ?? "unknown"} />
         <Row k="RTT" v={d.rttMs != null ? `${d.rttMs} ms` : "—"} />
-        <Row
-          k="Ports"
-          v={d.openPorts.length ? d.openPorts.join(", ") : "none observed"}
-        />
         <Row k="Status" v={d.online ? "online" : "offline"} />
       </dl>
+
+      <div className="ports-block">
+        <div className="ports-title">Open ports &amp; services</div>
+        {d.openPorts.length ? (
+          <div className="port-chips">
+            {d.openPorts.map((p) => {
+              const svc = serviceName(p);
+              const sus = SUSPICIOUS_PORTS.has(p);
+              return (
+                <span
+                  key={p}
+                  className={`port-chip ${sus ? "sus" : ""}`}
+                  title={sus ? "Port commonly used by backdoors" : (svc ?? "")}
+                >
+                  <span className="port-num">{p}</span>
+                  {svc && <span className="port-svc">{svc}</span>}
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="ports-none">none observed</div>
+        )}
+      </div>
 
       <div className="threat-meter">
         <div className="threat-meter-label">

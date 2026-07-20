@@ -117,3 +117,13 @@ export interface ScanStateEvent {
 export interface DeviceOfflineEvent {
   id: string;
 }
+
+/** A listening server on the machine running MeshOS (see `net::local` in Rust). */
+export interface LocalService {
+  address: string;
+  port: number;
+  protocol: string;
+  pid: number | null;
+  process: string | null;
+  service: string | null;
+}

@@ -48,15 +48,15 @@ fn emit_progress(app: &AppHandle, phase: &'static str, scanned: u32, total: u32,
     );
 }
 
-/// TCP-connect probe across all (host, port) pairs, bounded by a semaphore.
+/// TCP-connect probe of the given hosts × ports, bounded by a semaphore.
 /// A successful connect marks the port open; a refused connect still proves the
-/// host is up (reachable at L2/L3) even though the port is closed.
-async fn sweep(hosts: &[Ipv4Addr]) -> HashMap<Ipv4Addr, HostProbe> {
+/// host is up (reachable at L2/L3) even though that port is closed.
+async fn probe_ports(hosts: &[Ipv4Addr], probe: &[u16]) -> HashMap<Ipv4Addr, HostProbe> {
     let sem = Arc::new(Semaphore::new(MAX_INFLIGHT));
     let mut set: JoinSet<Option<(Ipv4Addr, Option<u16>, u32)>> = JoinSet::new();
 
     for &ip in hosts {
-        for &port in ports::PROBE_PORTS {
+        for &port in probe {
             let sem = sem.clone();
             set.spawn(async move {
                 let _permit = sem.acquire_owned().await.ok()?;
@@ -94,12 +94,42 @@ async fn sweep(hosts: &[Ipv4Addr]) -> HashMap<Ipv4Addr, HostProbe> {
             });
         }
     }
+    map
+}
 
-    for hp in map.values_mut() {
+/// Two-phase sweep: a fast liveness pass with a few ports across every host,
+/// then the full port set against only the hosts found alive. This keeps a wide
+/// port list cheap — dead/absent addresses are never deep-scanned.
+async fn sweep(hosts: &[Ipv4Addr]) -> HashMap<Ipv4Addr, HostProbe> {
+    let phase1 = probe_ports(hosts, ports::LIVENESS_PORTS).await;
+    let live: Vec<Ipv4Addr> = phase1.values().filter(|p| p.up).map(|p| p.ip).collect();
+
+    let mut result = probe_ports(&live, ports::PROBE_PORTS).await;
+
+    // Fold phase-1 findings (liveness + RTT + any open ports) back in.
+    for (ip, p1) in phase1 {
+        let entry = result.entry(ip).or_insert(HostProbe {
+            ip,
+            up: p1.up,
+            open_ports: Vec::new(),
+            rtt_ms: None,
+        });
+        entry.up = entry.up || p1.up;
+        if let Some(r1) = p1.rtt_ms {
+            entry.rtt_ms = Some(entry.rtt_ms.map_or(r1, |r| r.min(r1)));
+        }
+        for p in p1.open_ports {
+            if !entry.open_ports.contains(&p) {
+                entry.open_ports.push(p);
+            }
+        }
+    }
+
+    for hp in result.values_mut() {
         hp.open_ports.sort_unstable();
         hp.open_ports.dedup();
     }
-    map
+    result
 }
 
 /// Best-effort reverse DNS for the live hosts.
@@ -312,5 +342,24 @@ pub async fn scan_loop(app: AppHandle, state: Arc<AppState>, iface_name: Option<
 pub async fn scan_now(app: AppHandle, state: Arc<AppState>, iface_name: Option<String>) {
     if let Err(e) = scan_once(&app, &state, iface_name).await {
         emit_progress(&app, "idle", 0, 0, format!("Scan error: {e}"));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Smoke-test the two-phase sweep against loopback. Prints what it finds;
+    /// if the host runs any TCP service (ssh, a web server…), loopback shows up.
+    #[tokio::test]
+    async fn sweeps_loopback_without_panicking() {
+        let map = sweep(&[Ipv4Addr::LOCALHOST]).await;
+        match map.get(&Ipv4Addr::LOCALHOST) {
+            Some(hp) => println!(
+                "loopback up={} open_ports={:?} rtt={:?}",
+                hp.up, hp.open_ports, hp.rtt_ms
+            ),
+            None => println!("loopback: no listening services detected"),
+        }
     }
 }

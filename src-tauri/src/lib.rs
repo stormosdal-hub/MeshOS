@@ -21,6 +21,7 @@ pub fn run() {
             commands::stop_lan_scan,
             commands::rescan,
             commands::acknowledge_anomaly,
+            commands::list_local_services,
         ])
         .run(tauri::generate_context!())
         .expect("error while running the MeshOS application");

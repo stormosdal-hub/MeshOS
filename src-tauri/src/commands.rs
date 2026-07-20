@@ -2,8 +2,8 @@
 //! JS passes camelCase argument names, which Tauri maps to the snake_case
 //! parameters here (e.g. `interfaceName` -> `interface_name`).
 
-use crate::model::{Device, NetInterface};
-use crate::net::{discover, interface};
+use crate::model::{Device, LocalService, NetInterface};
+use crate::net::{discover, interface, local};
 use crate::state::AppState;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
@@ -54,4 +54,10 @@ pub fn rescan(app: AppHandle, state: State<'_, Arc<AppState>>) {
 #[tauri::command]
 pub fn acknowledge_anomaly(state: State<'_, Arc<AppState>>, id: String) {
     state.acknowledged.lock().unwrap().insert(id);
+}
+
+/// Listening TCP servers on this machine (with owning process where available).
+#[tauri::command]
+pub fn list_local_services() -> Vec<LocalService> {
+    local::list_local_services()
 }

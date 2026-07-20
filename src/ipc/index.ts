@@ -2,6 +2,7 @@ import type {
   Anomaly,
   Device,
   DeviceOfflineEvent,
+  LocalService,
   NetInterface,
   ScanProgress,
   ScanStateEvent,
@@ -20,6 +21,8 @@ export interface MeshBackend {
 
   listInterfaces(): Promise<NetInterface[]>;
   getDevices(): Promise<Device[]>;
+  /** Listening TCP servers on the machine running MeshOS. */
+  listLocalServices(): Promise<LocalService[]>;
   startScan(interfaceName?: string): Promise<void>;
   stopScan(): Promise<void>;
   rescan(): Promise<void>;

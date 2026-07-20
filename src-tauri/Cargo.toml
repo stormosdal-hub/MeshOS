@@ -30,6 +30,8 @@ tokio = { version = "1", features = [
 netdev = "0.31"
 # Reverse DNS (blocking; used via spawn_blocking).
 dns-lookup = "2"
+# Enumerate the local machine's listening sockets + owning process.
+listeners = "0.2"
 
 [features]
 # Optional active ARP via libpnet for direct MAC discovery on the local

@@ -4,6 +4,7 @@ import type {
   Device,
   DeviceKind,
   DeviceOfflineEvent,
+  LocalService,
   NetInterface,
   ScanProgress,
   ScanStateEvent,
@@ -289,6 +290,20 @@ export function createMockBackend(): MeshBackend {
 
     async getDevices(): Promise<Device[]> {
       return Array.from(devices.values());
+    },
+
+    async listLocalServices(): Promise<LocalService[]> {
+      // Simulated "servers running on this device" for the browser demo.
+      return [
+        { address: "0.0.0.0", port: 22, protocol: "tcp", pid: 812, process: "sshd", service: "SSH" },
+        { address: "127.0.0.1", port: 1420, protocol: "tcp", pid: 44120, process: "meshos", service: null },
+        { address: "127.0.0.1", port: 5173, protocol: "tcp", pid: 44120, process: "node", service: null },
+        { address: "127.0.0.1", port: 5432, protocol: "tcp", pid: 990, process: "postgres", service: "PostgreSQL" },
+        { address: "127.0.0.1", port: 6379, protocol: "tcp", pid: 991, process: "redis-server", service: "Redis" },
+        { address: "0.0.0.0", port: 3000, protocol: "tcp", pid: 3312, process: "node", service: "HTTP" },
+        { address: "0.0.0.0", port: 8080, protocol: "tcp", pid: 3410, process: "docker-proxy", service: "HTTP" },
+        { address: "127.0.0.1", port: 631, protocol: "tcp", pid: 720, process: "cupsd", service: "IPP" },
+      ];
     },
 
     async startScan(_interfaceName?: string): Promise<void> {

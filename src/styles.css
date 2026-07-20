@@ -676,3 +676,129 @@ body,
     flex-wrap: wrap;
   }
 }
+
+/* ---- Open-port chips (inspector) ----------------------------------------- */
+.ports-block {
+  margin: 0 0 12px;
+}
+.ports-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.port-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.port-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.port-chip .port-num {
+  color: var(--text);
+  font-weight: 600;
+}
+.port-chip .port-svc {
+  color: var(--accent-2);
+  font-size: 10px;
+}
+.port-chip.sus {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.port-chip.sus .port-num,
+.port-chip.sus .port-svc {
+  color: #fca5a5;
+}
+.ports-none {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+/* ---- "Servers on this device" modal -------------------------------------- */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(2, 4, 10, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: auto;
+}
+.servers-modal {
+  width: min(700px, 92vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.modal-x {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 15px;
+  cursor: pointer;
+}
+.modal-x:hover {
+  color: var(--text);
+}
+.servers-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.servers-table {
+  overflow: auto;
+}
+.servers-row {
+  display: grid;
+  grid-template-columns: 60px 120px minmax(120px, 1fr) 66px 130px;
+  gap: 10px;
+  padding: 7px 8px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  align-items: center;
+}
+.servers-head {
+  position: sticky;
+  top: 0;
+  background: rgba(12, 18, 30, 0.96);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--panel-border);
+}
+.servers-row .mono {
+  font-family: var(--mono);
+}
+.servers-row .dim {
+  color: var(--text-dim);
+}
+.servers-row .proc {
+  color: var(--accent-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.servers-table .empty {
+  padding: 20px;
+  text-align: center;
+}

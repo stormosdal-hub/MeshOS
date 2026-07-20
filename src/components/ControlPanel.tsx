@@ -1,7 +1,13 @@
 import type { Controller } from "../App";
 import { useMesh } from "../store";
 
-export function ControlPanel({ controller }: { controller: Controller }) {
+export function ControlPanel({
+  controller,
+  onShowServers,
+}: {
+  controller: Controller;
+  onShowServers: () => void;
+}) {
   const interfaces = useMesh((s) => s.interfaces);
   const selectedInterface = useMesh((s) => s.selectedInterface);
   const scanning = useMesh((s) => s.scanning);
@@ -69,6 +75,10 @@ export function ControlPanel({ controller }: { controller: Controller }) {
           <span className="msg">{progress.message}</span>
         </div>
       </div>
+
+      <button className="btn btn-ghost full servers-trigger" onClick={onShowServers}>
+        🖥 Servers on this device
+      </button>
     </section>
   );
 }

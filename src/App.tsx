@@ -1,11 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getBackend, type MeshBackend, type UnlistenFn } from "./ipc";
 import { NetworkScene } from "./scene/NetworkScene";
 import { useMesh } from "./store";
+import type { LocalService } from "./types";
 import { ControlPanel } from "./components/ControlPanel";
 import { StatBar } from "./components/StatBar";
 import { AlertsFeed } from "./components/AlertsFeed";
 import { DeviceInspector } from "./components/DeviceInspector";
+import { LocalServices } from "./components/LocalServices";
 import { Legend } from "./components/Legend";
 
 /**
@@ -19,12 +21,14 @@ export interface Controller {
   focus: (id: string) => void;
   select: (id: string | null) => void;
   acknowledge: (id: string) => void;
+  listLocalServices: () => Promise<LocalService[]>;
 }
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<NetworkScene | null>(null);
   const backendRef = useRef<MeshBackend | null>(null);
+  const [showServers, setShowServers] = useState(false);
 
   // 1) Build the 3D scene first so it exists before backend events arrive.
   useEffect(() => {
@@ -118,6 +122,8 @@ export default function App() {
       useMesh.getState().acknowledgeAnomaly(id);
       backendRef.current?.acknowledgeAnomaly(id);
     },
+    listLocalServices: () =>
+      backendRef.current?.listLocalServices() ?? Promise.resolve([]),
   };
 
   return (
@@ -138,7 +144,10 @@ export default function App() {
         </header>
 
         <div className="hud-left">
-          <ControlPanel controller={controller} />
+          <ControlPanel
+            controller={controller}
+            onShowServers={() => setShowServers(true)}
+          />
           <Legend />
         </div>
 
@@ -148,6 +157,12 @@ export default function App() {
 
         <DeviceInspector controller={controller} />
       </div>
+
+      <LocalServices
+        open={showServers}
+        onClose={() => setShowServers(false)}
+        controller={controller}
+      />
     </div>
   );
 }
